@@ -1,0 +1,254 @@
+module vyatta-system-crash-dump-v1 {
+	namespace "urn:vyatta.com:mgmt:vyatta-system-crash-dump:1";
+	prefix vyatta-system-crash-dump-v1;
+
+	import ietf-yang-types {
+		prefix ytypes;
+	}
+	import configd-v1 {
+		prefix configd;
+	}
+	import vyatta-system-v1 {
+		prefix system;
+	}
+
+	organization "AT&T Inc.";
+	contact
+		"AT&T
+		Postal: 208 S. Akard Street
+			Dallas, TX 75202
+		Web: www.att.com";
+
+		description
+		"Copyright (c) 2021 AT&T Intellectual Property
+		 All rights reserved.
+
+
+		 Redistribution and use in source and binary forms, with or without
+		 modification, are permitted provided that the following conditions
+		 are met:
+
+		 1. Redistributions of source code must retain the above copyright
+			notice, this list of conditions and the following disclaimer.
+		 2. Redistributions in binary form must reproduce the above
+			copyright notice, this list of conditions and the following
+			disclaimer in the documentation and/or other materials provided
+			with the distribution.
+		 3. Neither the name of the copyright holder nor the names of its
+			contributors may be used to endorse or promote products derived
+			from this software without specific prior written permission.
+
+		 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+		 'AS IS' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+		 LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+		 FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+		 COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+		 INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+		 BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+		 LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+		 CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+		 LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+		 ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+		 POSSIBILITY OF SUCH DAMAGE.
+
+		 SPDX-License-Identifier: BSD-3-Clause
+
+		 Miscellaneous system configuration";
+
+	revision 2021-05-13 {
+		description "Initial revision.";
+	}
+
+	grouping crash-dump-config {
+		container kernel-crash-dump {
+			configd:help "Save vmcore after a kernel crash. Configuration change takes effect on
+						 next boot";
+			description
+				"Save kernel memory image after a kernel crash. Adding or deleting this
+				configuration takes effect on next system boot.
+
+				Setting 'enable' below will reduce the system memory available for normal operation as
+				it reserves a small amount of RAM to run the kernel crash dump capture service.
+				Configure the amount of memory reserved for kernel crash dump capture service.
+
+				By default, the system automatically determine the amount of reserved memory.
+				- No memory is reserved for systems with less than 2304MB of RAM.
+				- 256MB is reserved for systems with 4GB to 8GB RAM
+				- 512MB is reserved for systems with more 8GB RAM
+				No memory will be reserved and no crash dumps will be collected if remaining memory
+				(total RAM - reserved-memory) is less than 2 GB.
+
+				The amount of memory reserved may be increased using 'reserved-memory' configuration.";
+
+
+			leaf enable {
+				type boolean;
+				configd:help "Enable/Disable kernel crash dump capture service";
+				default 'false';
+				description
+					"Set it to 'true' to configure kernel crash dump capture system. Save kernel memory
+					image after a kernel crash. As mentioned earlier in the container description, setting
+					'true' will reduce the available system memory for normal operation.
+					This configuration takes effect on next system boot.";
+			}
+
+			leaf files-to-save {
+				type uint16;
+				configd:help "Number of saved kernel crash dump files. 0 indicates no crash dump is captured.";
+				description
+					"Maximum number of kernel crash dump files saved. If this is not set, all kernel
+					crash dump files will be saved provided there is enough space to write the dump
+					file.
+
+					Set it to 0 to disable kernel crash dump capture without rebooting the system. The
+					reserved memory is not released. Once the kernel crash dump is configured and system is
+					rebooted, this configuration may be used to disable/enable the crash dump capture without
+					rebooting the system.";
+			}
+
+			leaf delete-old-files {
+				type empty;
+				configd:help "Automatically delete old crash dump files if max-files limit is reached.";
+				description "Automatically delete old crash dump files if max-files limit is reached.";
+			}
+
+			leaf reserved-memory {
+				type union {
+					type uint32 {
+						range 256..max;
+					}
+					type string {
+						pattern 'auto';
+					}
+				}
+				default 'auto';
+				units megabytes;
+				description
+					"Configure the amount of memory reserved for kernel crash dump capture service.
+					Use 'auto' to let the system automatically determine the amount of reserved
+					memory as per the memory reservation policy described in the 'kernel-crash-dump' container
+					description.
+
+					No memory will be reserved and no crash dumps will be collected if remaining memory
+					(total RAM - reserved-memory) is less than 2 GB.
+
+					This configuration requires a system reboot for the new configuration to take
+					effect.";
+
+				configd:help "Reserved memory for crash kernel. Requires system reboot.";
+			}
+
+		}
+	}
+
+	grouping crash-dump-status {
+		container status {
+			config false;
+			description "current status of kernel crash dump service.";
+			
+			leaf service-state {
+				description "Current service status";
+				type string {
+					pattern 'running|disabled|error';
+				}
+			}
+			leaf reserved-memory {
+				description "Amount of memory reserved for crash dump capture service.";
+				type uint64;
+				units bytes;
+			}
+			leaf need-reboot {
+				description "True if the system needs a reboot to allow kernel crash dump configuration
+				changes to take effect.";
+				type boolean;
+			}
+			leaf rebooted-after-system-crash {
+				description "This is true if the system current reboot was caused by a kernel crash
+				dump. This is only available if the kernel-crash-dump is configured.";
+				type boolean;
+			}
+			list crash-dump-files {
+				description "Listing of saved crash dumps.";
+				key "index";
+				leaf index {
+					description "Index of the saved crash dump in reverse chronological order.";
+					type int32;
+					mandatory true;
+				}
+				leaf timestamp {
+					description "Dump file creation time.";
+					type ytypes:date-and-time;
+					mandatory true;
+				}
+				leaf path {
+					description "Full path name of the crash dump file.";
+					type string;
+					mandatory true;
+				}
+				leaf size {
+					description "Size of the crash dump file on disk in bytes";
+					type uint64;
+				}
+			}
+		}
+	}
+
+	augment /system:system {
+		uses crash-dump-config {
+			augment kernel-crash-dump {
+				uses crash-dump-status;
+			}
+		}
+	}
+
+	typedef crash-dump-index {
+		type int32;
+		description
+			"Index of a requested crash-dump.
+			A non-negative index of indicates its reverse chronological position, 0 indicates the latest
+			crash-dump, n indicates the (n-1)-th crash dump in reverse chronological order. A negative
+			integer indicates the chronological position starting from the last crash dump e.g. index of
+			-1 means the earliest crash-dump, -n is the nth crash-dump stored in the system.";
+	}
+
+	rpc delete-crash-dumps {
+		description
+			"Delete crash dumps saved in the system. If no index is provided delete all crash dumps.";
+		input {
+			leaf-list index {
+				type crash-dump-index;
+				description "Index of requested crash-dump to be deleted.";
+			}
+		}
+	}
+
+	rpc get-crash-dmesg {
+		description
+			"Get dmesg from a crash dump file. Returns the kernel log message buffer content
+			from the crash-dump. If no index is provided return messages from all saved crash-dumps.";
+		input {
+			leaf-list index {
+				type crash-dump-index;
+				description "Index of requested crash-dump.";
+			}
+		}
+		output {
+			list crash-info {
+				description "List of crash dumps information.";
+				key "index";
+				leaf index {
+					type crash-dump-index;
+					description "Index of crash dump file in reverse chronological order.";
+				}
+				leaf filename {
+					type string;
+					description "crash-dump file name.";
+				}
+				leaf dmesg {
+					type string;
+					description "kernel log message from the crash dump file.";
+				}
+			}
+		}
+	}
+}
