@@ -1,0 +1,9 @@
+[Vyatta Component]
+Name=net.vyatta.vci.kdump
+Description=VCI Component for KDump
+ExecName=/lib/vci-kdump/vci-kdump
+ConfigFile=/dev/null
+
+[Model net.vyatta.vci.kdump.v1]
+Modules=vyatta-system-crash-dump-v1
+ModelSets=vyatta-v1

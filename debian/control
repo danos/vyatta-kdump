@@ -1,0 +1,27 @@
+Source: vyatta-kdump
+Section: contrib/admin
+Priority: optional
+Maintainer: Vyatta Package Maintainers <DL-vyatta-help@att.com>
+Build-Depends: debhelper (>= 9.20160709),
+               dh-golang,
+               dh-vci,
+               dh-yang,
+               golang-any,
+               golang-github-danos-configd-client-dev,
+               golang-github-danos-configd-rpc-dev,
+               golang-github-danos-vci-dev,
+Standards-Version: 3.9.8
+
+Package: vci-kdump
+Architecture: any
+Depends: kdump-tools, ${misc:Depends}, ${shlibs:Depends}
+Description: VCI KDump Component
+ A VCI component for kDump configuration and states
+
+Package: vyatta-system-crash-dump-v1-yang
+Architecture: all
+Depends: ${misc:Depends}, ${yang:Depends}
+Section: contrib/admin
+Description: vyatta-system-crash-dump-v1 module
+ The YANG module for vyatta-system-crash-dump-v1. System configuration
+ and states for kernel crash dump feature.
