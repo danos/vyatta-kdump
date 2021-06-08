@@ -25,3 +25,11 @@ Section: contrib/admin
 Description: vyatta-system-crash-dump-v1 module
  The YANG module for vyatta-system-crash-dump-v1. System configuration
  and states for kernel crash dump feature.
+
+Package: vyatta-op-crash-dump-v1-yang
+Architecture: all
+Depends: ${yang:Depends}, ${misc:Depends}
+Section: contrib/admin
+Description: vyatta-op-crash-dump-v1 module
+ The YANG module for vyatta-op-crash-dump-v1. Operational commands
+ for kernel crash dump feature.

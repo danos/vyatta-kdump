@@ -1,1 +1,2 @@
 usr/bin/vci-kdump lib/vci-kdump/
+usr/bin/kdump-op lib/vci-kdump/
