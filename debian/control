@@ -28,7 +28,7 @@ Description: vyatta-system-crash-dump-v1 module
 
 Package: vyatta-op-crash-dump-v1-yang
 Architecture: all
-Depends: ${yang:Depends}, ${misc:Depends}
+Depends: vci-kdump (>= ${source:Version}), ${yang:Depends}, ${misc:Depends}
 Section: contrib/admin
 Description: vyatta-op-crash-dump-v1 module
  The YANG module for vyatta-op-crash-dump-v1. Operational commands
