@@ -1,6 +1,7 @@
-vyatta-kdump (1.9) UNRELEASED; urgency=medium
+vyatta-kdump (0.1) unstable; urgency=medium
 
   [ Nachiketa Prachanda ]
   * First package version
+  * kernel-crash-dump op mode commands
 
- -- Nachiketa Prachanda <nprachan@vyatta.att-mail.com>  Fri, 04 Jun 2021 01:24:16 -0700
+ -- Nachiketa Prachanda <nprachan@vyatta.att-mail.com>  Wed, 16 Jun 2021 11:20:32 -0700
