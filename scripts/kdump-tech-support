@@ -1,0 +1,9 @@
+#!/bin/bash
+#
+# Copyright (c) 2021, AT&T Intellectual Property. All rights reserved.
+# SPDX-License-Identifier: GPL-2.0-only
+
+
+source "$(cd "$(dirname "${0}")" && pwd -P)"/../tech-support.functions
+
+do_cmd run show system kernel-crash-dump
