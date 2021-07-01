@@ -321,7 +321,7 @@ func GetCrashFiles() (string, []os.FileInfo) {
 	}
 	sort.SliceStable(crashfiles, func(i, j int) bool {
 		ni, _ := strconv.ParseUint(crashfiles[i].Name(), 0, 0)
-		nj, _ := strconv.ParseUint(crashfiles[i].Name(), 0, 0)
+		nj, _ := strconv.ParseUint(crashfiles[j].Name(), 0, 0)
 		return nj < ni
 	})
 	return kdumpCrashDir, crashfiles
