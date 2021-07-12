@@ -52,6 +52,14 @@ func (s *State) serviceState() string {
 	return "disabled"
 }
 
+func (s *State) isLastBootCrashed() bool {
+	kdc := s.getConfig()
+	if kdc != nil && kdc.IsEnabled() {
+		return kdump.LastBootCrashed()
+	}
+	return false
+}
+
 func dateTimeFromName(s string) string {
 	if len(s) != 12 {
 		return ""
@@ -82,7 +90,7 @@ func (s *State) getKDumpStatus() *st.KDumpStatusData {
 		ServiceState:      s.serviceState(),
 		ReservedMemory:    uint64(kdump.CrashKernelMemory),
 		NeedReboot:        kdump.IsRebootNeeded(),
-		CrashRebootStatus: kdump.LastBootCrashed(),
+		CrashRebootStatus: s.isLastBootCrashed(),
 		CrashDumps:        getCrashDumps(),
 	}
 }

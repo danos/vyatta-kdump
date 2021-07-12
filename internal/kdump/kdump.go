@@ -24,6 +24,7 @@ const (
 	kdumpCmd                          = "/usr/sbin/kdump-config"
 	kdumpCrashDir                     = "/var/crash"
 	kdumpDir                          = "/var/lib/kdump"
+	kdumpLastBootFile                 = "kdump-last-boot-crashed"
 	kernelCmdLine                     = "/proc/cmdline"
 	grubEditEnvCmd                    = "/opt/vyatta/sbin/vyatta-grub-editenv"
 	initrdStateFile                   = kdumpDir + ".initrd-created"
@@ -34,6 +35,7 @@ const (
 	kdumpMinUnreserved                = 2048
 	kdumpKernel                       = "/boot/vmlinuz"
 	kdumpInitrd                string = "/boot/initrd.img"
+	runDir                            = "/run"
 )
 
 const (
@@ -361,6 +363,19 @@ func DelCrashDumps(index []int32) error {
 }
 
 func LastBootCrashed() bool {
-	// TODO
+	fn := func(dname string) bool {
+		fname := fmt.Sprintf("%s/%s", dname, kdumpLastBootFile)
+		if st, err := os.Stat(fname); err == nil && st.Size() != 0 {
+			return true
+		}
+		return false
+	}
+
+	dirs := []string{kdumpCrashDir, runDir}
+	for _, d := range dirs {
+		if fn(d) {
+			return true
+		}
+	}
 	return false
 }
