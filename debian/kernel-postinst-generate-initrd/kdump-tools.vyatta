@@ -1,0 +1,4 @@
+#!/bin/sh -e
+# This script replaces the kdump-tools kernel post install package to
+# skip the generation of initrd during kernel post installation.
+exit 0

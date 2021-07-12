@@ -1,0 +1,2 @@
+debian/kernel-postinst-generate-initrd/kdump-tools.vyatta  etc/kernel/postinst.d/
+scripts/kdump-config.vyatta usr/sbin

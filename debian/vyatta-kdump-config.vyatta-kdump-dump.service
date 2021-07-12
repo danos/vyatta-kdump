@@ -1,0 +1,13 @@
+[Unit]
+Description=Kernel crash dump capture service
+Wants=local-fs.target
+After=local-fs.target
+ConditionPathExists=/proc/vmcore
+ConditionPathExists=/etc/default/kdump-tools
+
+[Service]
+Type=oneshot
+StandardOutput=journal+console
+EnvironmentFile=/etc/default/kdump-tools
+ExecStart=/usr/sbin/kdump-config savecore
+RemainAfterExit=yes

@@ -3,6 +3,7 @@ Section: contrib/admin
 Priority: optional
 Maintainer: Vyatta Package Maintainers <DL-vyatta-help@att.com>
 Build-Depends: debhelper (>= 9.20160709),
+               config-package-dev (>= 4.15~),
                dh-golang,
                dh-vci,
                dh-yang,
@@ -14,7 +15,7 @@ Standards-Version: 3.9.8
 
 Package: vci-kdump
 Architecture: any
-Depends: kdump-tools, ${misc:Depends}, ${shlibs:Depends}
+Depends: vyatta-kdump-config, ${misc:Depends}, ${shlibs:Depends}
 Description: VCI KDump Component
  A VCI component for kDump configuration and states
 
@@ -33,3 +34,11 @@ Section: contrib/admin
 Description: vyatta-op-crash-dump-v1 module
  The YANG module for vyatta-op-crash-dump-v1. Operational commands
  for kernel crash dump feature.
+
+Package: vyatta-kdump-config
+Architecture: any
+Depends: ${misc:Depends}, kdump-tools
+Provides: ${diverted-files}
+Conflicts: ${diverted-files}
+Description: Vyatta KDump config-package
+ Vyatta KDump configurations files

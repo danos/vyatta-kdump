@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	kdumpService                      = "kdump-tools.service"
+	kdumpLoadService                  = "vyatta-kdump-load.service"
 	kdumpEnvFile                      = "/etc/default/kdump-tools"
 	kdumpCmd                          = "/usr/sbin/kdump-config"
 	kdumpCrashDir                     = "/var/crash"
@@ -58,7 +58,7 @@ KDUMP_DELETE_OLD={{.DeleteOld}}
 #MAKEDUMP_ARGS="-c -d 31"
 #KDUMP_KEXEC_ARGS=""
 #KDUMP_CMDLINE=""
-KDUMP_CMDLINE_APPEND="nr_cpus=1 systemd.unit=kdump-tools.service irqpoll nousb ata_piix.prefer_ms_hyperv=0 no-dataplane"
+KDUMP_CMDLINE_APPEND="nr_cpus=1 systemd.unit=vyatta-kdump-dump.service irqpoll nousb ata_piix.prefer_ms_hyperv=0 no-dataplane"
 `
 
 var CrashKernelMemory uint  // from /sys/kernel/kexec_crash_size
@@ -157,7 +157,7 @@ func Enable(numdumps *int, delete_old bool) error {
 		log.Ilog.Printf("No need to restart Kernel Crash Dump Service")
 		return nil
 	}
-	if err = startSystemdService(kdumpService); err != nil {
+	if err = startSystemdService(kdumpLoadService); err != nil {
 		return err
 	}
 	return nil
@@ -165,8 +165,8 @@ func Enable(numdumps *int, delete_old bool) error {
 
 // Disable and Cleanup files if requested.
 func Disable(cleanup bool) {
-	if err := stopSystemdService(kdumpService); err != nil {
-		log.Dlog.Printf("Failed to stop %s:%s", kdumpService, err)
+	if err := stopSystemdService(kdumpLoadService); err != nil {
+		log.Dlog.Printf("Failed to stop %s:%s", kdumpLoadService, err)
 	}
 	if cleanup {
 		os.Remove(kdumpEnvFile)
@@ -191,8 +191,16 @@ func stopSystemdService(srv string) error {
 		return err
 	}
 	defer conn.Close()
-	_, err = conn.StopUnit(srv, "replace", nil)
-	return err
+	ch := make(chan string)
+	_, err = conn.StopUnit(srv, "replace", ch)
+	if err != nil {
+		return err
+	}
+	result := <-ch
+	if result == "failed" || result == "timeout" {
+		return fmt.Errorf("failed to stop %s: result=%s", srv, result)
+	}
+	return nil
 }
 
 // make crashkernel parameters value from config

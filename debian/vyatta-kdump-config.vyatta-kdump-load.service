@@ -1,0 +1,16 @@
+[Unit]
+Description=Kernel crash dump capture service
+ConditionPathExists=!/proc/vmcore
+ConditionPathExists=/etc/default/kdump-tools
+ConditionKernelCommandLine=crashkernel
+
+[Service]
+Type=oneshot
+StandardOutput=journal+console
+EnvironmentFile=-/etc/default/kdump-tools
+ExecStart=/usr/sbin/kdump-config load
+ExecStop=/usr/sbin/kdump-config unload
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

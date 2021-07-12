@@ -1,0 +1,117 @@
+#!/bin/bash
+# Copyright (c) 2021, AT&T Intellectual Property. All rights reserved.
+# SPDX-License-Identifier: GPL-2.0-only
+#
+# kdump-config.vyatta <load|unload|savecore>
+#
+# Add kdump-config.vyatta scripts.
+# 
+# kdump-config.vyatta <load|unload|savecore>
+# 
+# In addition to calling kdump-config the script does the following
+#  - savecore
+#     - Write the current timestamp to ${KDUMP_SAVECORE_STATUS}
+#     - Skips dumping if number of saved crashes reached the limit and delete
+#       old files is false.
+#     - Save kdump status to the status file /var/crash/vyatta-kdump-status.
+#       This file is checked on next boot to check last-boot-crashed state.
+#  - load
+#     - if /var/crash/kdump-last-boot-crashed file exists move that to
+#       /run.
+# 
+
+
+check_crash_count() {
+	local ndumps=${1:-0}
+
+	[ -n "$KDUMP_DELETE_OLD" ] || return 0 
+	[ "$KDUMP_DELETE_OLD" -ne 1 ] || return 0
+	[ -n "$KDUMP_NUM_DUMPS" ] || return 0
+	[ "$ndumps" -ge "$KDUMP_NUM_DUMPS" ] || return 0
+
+	echo "Kernel crash dump not saved: Dump file count limit ${KDUMP_NUM_DUMPS} reached."
+	return 1
+}
+
+# save to both last-boot-crashed and append to savecore_status
+save_kdump_status() {
+	local bootid
+	local ts
+	bootid="$(tr -d '-' < /proc/sys/kernel/random/boot_id)"
+	ts="${2:-$(date '+%Y%m%d%H%M')}"
+	echo "timestamp=${ts} bootid=${bootid} status=${1}" | \
+		tee "${KDUMP_LAST_BOOT_CRASHED}" >> "${KDUMP_SAVECORE_STATUS}"
+}
+
+kdump_savecore() {
+	local -a old_dumps
+	local -a new_dumps
+
+	readarray old_dumps < <(ls -1dv "${KDUMP_COREDIR}"/[0-9]*)
+	if ! check_crash_count "${#old_dumps[@]}"; then 
+		save_kdump_status skipped
+		return 1
+	fi
+
+	if ! "$KDUMP_SCRIPT" savecore; then
+		save_kdump_status error
+		echo "$0: failed to save dump - kdump-config failed"
+		return 1
+	fi
+
+	readarray new_dumps < <(ls -1dv "${KDUMP_COREDIR}"/[0-9]*)
+	local last_crash="${old_dumps[-1]}"
+	local new_crash="${new_dumps[-1]}"
+	if [ -z "$new_crash" ] || [ "$last_crash" = "$new_crash" ]; then
+		echo "ERROR: crash dump exit status 0 - but no new kernel crash dump."
+		save_kdump_status nofile
+		return 1
+	fi
+	save_kdump_status success "$(basename "$new_crash")"
+	return 0
+}
+
+kdump_load() {
+	if [ -s "${KDUMP_LAST_BOOT_CRASHED}" ]; then
+		mv "${KDUMP_LAST_BOOT_CRASHED}" /run
+	fi
+	"$KDUMP_SCRIPT" load
+}
+
+kdump_unload() {
+	"$KDUMP_SCRIPT" unload
+}
+
+KDUMP_DEFAULTS="/etc/defaults/kdump-tools"
+[ -s "${KDUMP_DEFAULTS}" ] && . "${KDUMP_DEFAULTS}"
+
+KDUMP_COREDIR="${KDUMP_COREDIR:=/var/crash}"
+KDUMP_SCRIPT="${KDUMP_SCRIPT:=/usr/sbin/kdump-config.vyatta-orig}"
+KDUMP_SAVECORE_STATUS="${KDUMP_SAVECORE_STATUS:=${KDUMP_COREDIR}/vyatta-kdump-status}"
+KDUMP_FAIL_CMD="${KDUMP_FAIL_CMD:='/sbin/reboot -f'}"
+KDUMP_LAST_BOOT_CRASHED="${KDUMP_LAST_BOOT_CRASHED:=${KDUMP_COREDIR}/kdump-last-boot-crashed}"
+
+case "$1" in
+	load)
+		kdump_load
+		;;
+	unload)
+		kdump_unload
+		;;
+	reload)
+		kdump_unload
+		kdump_load
+		;;
+	savecore)
+		if ! kdump_savecore; then
+			sync
+			${KDUMP_FAIL_CMD}
+		fi
+		sync
+		/sbin/reboot -f
+		;;
+	*)
+		echo "Usage: $0 {load|unload|reload|savecore}"
+		exit 1
+esac
+exit 0
