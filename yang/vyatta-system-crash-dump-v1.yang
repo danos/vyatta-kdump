@@ -55,61 +55,71 @@ module vyatta-system-crash-dump-v1 {
 
 		 Miscellaneous system configuration";
 
-	revision 2021-05-13 {
+	revision 2021-07-23 {
 		description "Initial revision.";
 	}
 
 	grouping crash-dump-config {
 		container kernel-crash-dump {
-			configd:help "Save vmcore after a kernel crash. Configuration change takes effect on
-						 next boot";
+			configd:help "Save vmcore after a kernel crash.";
 			description
-				"Save kernel memory image after a kernel crash. Adding or deleting this
-				configuration takes effect on next system boot.
+				"Save kernel memory image after a kernel crash. The system should be rebooted after
+				changing 'enable' or 'reserved-memory' leaves.
 
-				Setting 'enable' below will reduce the system memory available for normal operation as
-				it reserves a small amount of RAM to run the kernel crash dump capture service.
-				Configure the amount of memory reserved for kernel crash dump capture service.
+				Setting 'enable' to 'true' will reserve a small amount of RAM to run the kernel
+				crash dump capture service. This will reduce the system memory available for normal
+				operations. Since the memory reservation can only be done at system boot, any
+				changes to reserved memory will require a system reboot.
 
-				By default, the system automatically determine the amount of reserved memory.
-				- No memory is reserved for systems with less than 2304MB of RAM.
-				- 256MB is reserved for systems with 4GB to 8GB RAM
-				- 512MB is reserved for systems with more 8GB RAM
+				Reserved Memory: By default, the system automatically determines the amount of
+				reserved memory.
+				- No memory is reserved for systems with less than 2304 MB of RAM.
+				- 256 MB is reserved for systems with 2304 MB to 8 GB RAM
+				- 512 MB is reserved for systems with more 8 GB RAM
+
 				No memory will be reserved and no crash dumps will be collected if remaining memory
 				(total RAM - reserved-memory) is less than 2 GB.
 
-				The amount of memory reserved may be increased using 'reserved-memory' configuration.";
-
+				The amount of memory reserved may be changed using 'reserved-memory' configuration.";
 
 			leaf enable {
 				type boolean;
 				configd:help "Enable/Disable kernel crash dump capture service";
 				default 'false';
 				description
-					"Set it to 'true' to configure kernel crash dump capture system. Save kernel memory
-					image after a kernel crash. As mentioned earlier in the container description, setting
+					"Enable/Disable kernel crash dump capture service. Setting this node to 'true'
+					enables the kernel crash dump capture system that saves kernel memory image
+					after a kernel crash. The system should be rebooted after changing this node.
+
+					As described earlier in the 'kernel-crash-dump' container description, setting
 					'true' will reduce the available system memory for normal operation.
-					This configuration takes effect on next system boot.";
+
+					When changed to 'true', the kernel crash dump service will be enabled if the
+					system was already booted with the reserved memory and 'files-to-save' is
+					non-zero. But if the system did not boot with the reserved memory, the
+					administrator need to reboot the system to enable the service.
+
+					When set to 'false', the kernel crash dump service is disabled, and no memory
+					will be reserved on next boot.";
 			}
 
 			leaf files-to-save {
 				type uint16;
-				configd:help "Number of saved kernel crash dump files. 0 indicates no crash dump is captured.";
+				configd:help "Number of saved kernel crash dump files. 0 disables kernel crash dump capture.";
 				description
-					"Maximum number of kernel crash dump files saved. If this is not set, all kernel
-					crash dump files will be saved provided there is enough space to write the dump
-					file.
+					"Maximum number of kernel crash dump files saved. If this is not set, all
+					kernel crash dump files will be saved provided there is enough space to write
+					the dump file.
 
-					Set it to 0 to disable kernel crash dump capture without rebooting the system. The
-					reserved memory is not released. Once the kernel crash dump is configured and system is
-					rebooted, this configuration may be used to disable/enable the crash dump capture without
-					rebooting the system.";
+					Set it to 0 to disable kernel crash dump capture without rebooting the system.
+					The reserved memory is not released. This configuration may be used to
+					disable/enable the crash dump capture without changing the reserved memory.";
 			}
 
 			leaf delete-old-files {
 				type empty;
-				configd:help "Automatically delete old crash dump files if max-files limit is reached.";
-				description "Automatically delete old crash dump files if max-files limit is reached.";
+				configd:help "Automatically delete old crash dump files if 'files-to-save limit' is reached.";
+				description "Automatically delete old crash dump files if 'files-to-save' limit is reached.";
 			}
 
 			leaf reserved-memory {
@@ -119,6 +129,8 @@ module vyatta-system-crash-dump-v1 {
 					}
 					type string {
 						pattern 'auto';
+						configd:pattern-help 'auto';
+						configd:help "Automatically set the amount of reserved memory. Requires system reboot.";
 					}
 				}
 				default 'auto';
@@ -126,26 +138,25 @@ module vyatta-system-crash-dump-v1 {
 				description
 					"Configure the amount of memory reserved for kernel crash dump capture service.
 					Use 'auto' to let the system automatically determine the amount of reserved
-					memory as per the memory reservation policy described in the 'kernel-crash-dump' container
-					description.
+					memory as per the memory reservation policy described in the
+					'kernel-crash-dump' container description.
 
-					No memory will be reserved and no crash dumps will be collected if remaining memory
-					(total RAM - reserved-memory) is less than 2 GB.
+					No memory will be reserved and no crash dumps will be collected if remaining
+					memory (total RAM - reserved-memory) is less than 2 GB.
 
 					This configuration requires a system reboot for the new configuration to take
 					effect.";
 
 				configd:help "Reserved memory for crash kernel. Requires system reboot.";
 			}
-
 		}
 	}
 
 	grouping crash-dump-status {
 		container status {
 			config false;
-			description "current status of kernel crash dump service.";
-			
+			description "Current status of kernel crash dump service.";
+
 			leaf service-state {
 				description "Current service status";
 				type string {
@@ -163,8 +174,8 @@ module vyatta-system-crash-dump-v1 {
 				type boolean;
 			}
 			leaf rebooted-after-system-crash {
-				description "This is true if the system current reboot was caused by a kernel crash
-				dump. This is only available if the kernel-crash-dump is configured.";
+				description "This is true if the current boot is immediately after a kernel
+				crash dump. This is only available if the kernel-crash-dump is configured.";
 				type boolean;
 			}
 			list crash-dump-files {
