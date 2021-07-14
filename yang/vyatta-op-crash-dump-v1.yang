@@ -60,18 +60,17 @@ module vyatta-op-crash-dump-v1 {
 
 		 Defines op mode comamnds for kernel crash dump.";
 
-	revision 2020-03-31 {
-		description "Initial version";
+	revision 2021-07-10 {
+		description "Initial version.";
 	}
 
 	opd:augment /show:show/show-sys:system {
 		opd:command  kernel-crash-dump {
-			opd:help "Show kernel crash-dump status and lists saved kernel crash-dumps";
+			opd:help "Show kernel crash-dump status and a list of saved kernel crash-dumps";
 			opd:on-enter '/lib/vci-kdump/kdump-op --show';
 
 			opd:argument index {
 				type int32;
-				opd:on-enter '/lib/vci-kdump/kdump-op --show -- $4';
 				opd:allowed '/lib/vci-kdump/kdump-op --allowed';
 				opd:help "Crash dump index";
 
