@@ -11,6 +11,7 @@ import (
 	"github.com/danos/vyatta-kdump/internal/kdump"
 	"github.com/danos/vyatta-kdump/internal/log"
 	"io/ioutil"
+	"strings"
 	"sync"
 	"sync/atomic"
 )
@@ -56,8 +57,9 @@ func (c *Config) Set(newConfig *ConfigData) error {
 		c.applyConfig(newConfig)
 		c.currentConfig.Store(newConfig)
 	}
-	log.Ilog.Println("Applied new KDump configuration")
-	return nil
+	m := setResult(newConfig)
+	log.Ilog.Println(m)
+	return errors.New(m)
 }
 
 func (c *Config) Check(proposedConfig *ConfigData) error {
@@ -92,6 +94,46 @@ func (c *Config) applyConfig(cfg *ConfigData) error {
 		log.Ilog.Println("Kdump Disabled")
 	}
 	return nil
+}
+
+func setResult(newcfg *ConfigData) string {
+	if newcfg == nil {
+		return "Error: No kernel crash dump configuration."
+	}
+
+	kd := newcfg.System.KDump
+
+	ready := kdump.GetKDumpState() == kdump.KDumpReady
+	reboot := kdump.IsRebootNeeded()
+	reserved := kdump.CrashKernelMemory != 0
+
+	// Memory Reservation Check
+	mem := ""
+	if reboot && reserved && kd.Enable {
+		mem = "Reserved Memory changes will take effect on next boot."
+	} else if reboot && reserved && !kd.Enable {
+		mem = "Reseved memory will be released on next boot."
+	} else if reboot && !reserved && kd.Enable {
+		mem = "Memory will be reserved on next boot."
+	}
+
+	// Enabled or disabled
+	state := ""
+	if kd.IsEnabled() {
+		if ready {
+			state = "Kernel crash dump is enabled."
+		} else if reboot {
+			state = "kernel crash dump will be enabled on next-boot."
+		} else {
+			state = "ERROR: kernel crash dump is not enabled."
+		}
+	} else if !ready {
+		state = "kernel crash dump is disabled."
+	} else {
+		state = "Error: Failed to disable kernel crash dump capture."
+	}
+
+	return strings.Join([]string{state, mem}, " ")
 }
 
 func (c *Config) readCache() {
