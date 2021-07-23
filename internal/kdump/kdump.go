@@ -182,8 +182,15 @@ func startSystemdService(srv string) error {
 		return err
 	}
 	defer conn.Close()
-	_, err = conn.StartUnit(srv, "replace", nil)
-	return err
+	ch := make(chan string)
+	if _, err := conn.StartUnit(srv, "replace", ch); err != nil {
+		return err
+	}
+	result := <-ch
+	if result != "done" {
+		return fmt.Errorf("Failed to start Unit %s: result=%s", srv, result)
+	}
+	return nil
 }
 
 // Stop a systemd service
