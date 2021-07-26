@@ -352,27 +352,11 @@ func GetCrashDMsg(crashdump os.FileInfo) string {
 	return string(dmesg)
 }
 
-func DelCrashDumps(index []int32) error {
-	_, crashdumps := GetCrashFiles()
-
-	var del_list []string
-	if len(index) == 0 {
-		del_list = make([]string, len(crashdumps))
-		for i := 0; i < len(crashdumps); i++ {
-			del_list[i] = fmt.Sprintf("%s/%s", kdumpCrashDir, crashdumps[i].Name())
-		}
-	} else {
-		del_list = make([]string, len(index))
-		for i, n := range index {
-			if int(n) > len(crashdumps) || int(-n) >= len(crashdumps) {
-				return errors.New(fmt.Sprintf("Invalid Index:%d", n))
-			}
-			del_list[i] = fmt.Sprintf("%s/%s", kdumpCrashDir, crashdumps[n].Name())
-		}
-	}
-
-	for _, crash := range del_list {
-		os.RemoveAll(crash)
+func DelCrashDump(crashdump os.FileInfo) error {
+	dname := fmt.Sprintf("%s/%s", kdumpCrashDir, crashdump.Name())
+	if err := os.RemoveAll(dname); err != nil {
+		log.Ilog.Printf("DelCrashdump: %s\n", err)
+		return err
 	}
 	return nil
 }
