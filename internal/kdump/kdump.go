@@ -329,7 +329,6 @@ func GetCrashFiles() (string, []os.FileInfo) {
 	crashfiles := make([]os.FileInfo, 0)
 	dentries, err := ioutil.ReadDir(kdumpCrashDir)
 	if err != nil {
-		log.Elog.Printf("Cannot read entries from %s:%s", kdumpCrashDir, err)
 		return kdumpCrashDir, crashfiles
 	}
 	for _, dentry := range dentries {
