@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path"
 	"regexp"
 	"sort"
 	"strconv"
@@ -136,23 +137,30 @@ func WriteEnv(numfile *int, delete_old bool) error {
 	if delete_old {
 		envInput.DeleteOld = "1"
 	}
-	f, err := os.OpenFile(kdumpEnvFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+	var envbuf bytes.Buffer
+	err := envFileTemplate.Execute(&envbuf, &envInput)
 	if err != nil {
-		return err
+		return fmt.Errorf("WriteEnv template error: %s", err)
 	}
-	defer f.Close()
-	return envFileTemplate.Execute(f, &envInput)
+	result := envbuf.Bytes()
+
+	old, _ := ioutil.ReadFile(kdumpEnvFile)
+	// Nothing changed - don't write to file
+	if bytes.Compare(old, result) == 0 {
+		return nil
+	}
+	return safeWriteFile(kdumpEnvFile, result)
 }
 
 // Setup all files needed to enable Kdump and starts
 // Kdump. This doesn't update kernel cmdline in grub.
 func Enable(numdumps *int, delete_old bool) error {
-	if CrashKernelMemory == 0 {
-		return errors.New("No Crash Kernel Memory reserved. Not starting KDump")
-	}
 	err := WriteEnv(numdumps, delete_old)
 	if err != nil {
 		return err
+	}
+	if CrashKernelMemory == 0 {
+		return errors.New("No Crash Kernel Memory reserved. Not starting KDump")
 	}
 	// If Kdump is already loaded no need to restart.
 	if GetKDumpState() == KDumpReady {
@@ -160,6 +168,7 @@ func Enable(numdumps *int, delete_old bool) error {
 		return nil
 	}
 	if err = startSystemdService(kdumpLoadService); err != nil {
+		log.Elog.Printf("Failed to start kdumpLoadService:%s", err.Error())
 		return err
 	}
 	return nil
@@ -385,4 +394,27 @@ func LastBootCrashed() bool {
 		}
 	}
 	return false
+}
+
+func safeWriteFile(name string, data []byte) error {
+	dir, fname := path.Split(name)
+	tmpf, err := ioutil.TempFile(dir, fname)
+	if err != nil {
+		return fmt.Errorf("WriteEnv: %s", err)
+	}
+	tmpname := tmpf.Name()
+	defer os.Remove(tmpname)
+
+	if _, err = tmpf.Write(data); err != nil {
+		return err
+	}
+	tmpf.Sync()
+
+	if err := tmpf.Close(); err != nil {
+		return err
+	}
+	if err := os.Rename(tmpname, kdumpEnvFile); err != nil {
+		return err
+	}
+	return nil
 }
