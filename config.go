@@ -54,7 +54,10 @@ func (c *Config) Set(newConfig *ConfigData) error {
 	c.writeCache(newConfig)
 
 	if newConfig != nil {
-		c.applyConfig(newConfig)
+		err := c.applyConfig(newConfig)
+		if err != nil {
+			log.Elog.Println("Set Error: %s", err)
+		}
 		c.currentConfig.Store(newConfig)
 	}
 	m := setResult(newConfig)
@@ -67,31 +70,44 @@ func (c *Config) Check(proposedConfig *ConfigData) error {
 }
 
 func (c *Config) applyConfig(cfg *ConfigData) error {
-	kd := cfg.System.KDump
-	if kd != nil && kd.Enable {
-		m, err := kd.ReservedMemStr()
-		if err == nil {
-			err = kdump.ReserveMem(m)
-		}
-		if err != nil {
-			return errors.New(fmt.Sprintf("Failed setup grub to reserve memory next boot: %s", err))
-		}
-	} else {
-		err := kdump.ReserveMem("0") // Free up reserved memory, on error log and continue.
-		if err != nil {
-			log.Wlog.Println("Failed to release reserved memory: %s", err)
-		}
+	errs := make([]error, 0)
+
+	if err := reserveMem(cfg); err != nil {
+		errs = append(errs, err)
 	}
+
+	kd := cfg.System.KDump
 	if kd != nil && kd.IsEnabled() {
-		err := kdump.Enable(kd.FilesToSave, kd.DeleteOldFiles)
-		if err != nil {
-			return errors.New(fmt.Sprintf("Failed to Enable kernel crash dump: %s", err))
+		if err := kdump.Enable(kd.FilesToSave, kd.DeleteOldFiles); err != nil {
+			errs = append(errs, fmt.Errorf("Failed to enable kernel-crash-dump: %s", err))
 		}
-		log.Ilog.Printf("Kdump enabled: Enable:%t FilesToSave: %s, DeleteOldFile %t ReservedMemory %v",
-			kd.Enable, kd.FilesToSave, kd.DeleteOldFiles, kd.ReservedMemory)
 	} else {
 		kdump.Disable(!kd.Enable)
-		log.Ilog.Println("Kdump Disabled")
+	}
+
+	var err error
+	for i, e := range errs {
+		if i == 0 {
+			err = e
+		} else {
+			err = fmt.Errorf("%s, %s", err, e)
+		}
+	}
+	return err
+}
+
+func reserveMem(cfg *ConfigData) error {
+	kd := cfg.System.KDump
+	m := "0"
+	var err error
+	if kd != nil && kd.Enable {
+		m, err = kd.ReservedMemStr()
+	}
+	if err == nil {
+		err = kdump.ReserveMem(m)
+	}
+	if err != nil {
+		return fmt.Errorf("Memory reservation error: %s", err)
 	}
 	return nil
 }
