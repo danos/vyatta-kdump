@@ -29,13 +29,14 @@ func (r *RPC) DeleteCrashDumps(in rpc.RPCInput) (struct{}, error) {
 	}
 
 	bad_index := make([]int32, 0)
-	dumps_to_delete := make([]os.FileInfo, len(in.Index))
+	dumps_to_delete := make([]os.FileInfo, 0)
 	for _, index := range in.Index {
 		n, err := dumpIndex(index, len(crashdumps))
 		if err != nil {
 			bad_index = append(bad_index, index)
+		} else {
+			dumps_to_delete = append(dumps_to_delete, crashdumps[n])
 		}
-		dumps_to_delete = append(dumps_to_delete, crashdumps[n])
 	}
 	if len(bad_index) != 0 {
 		return struct{}{}, fmt.Errorf("DeleteCrashDumps bad input: %v", bad_index)
