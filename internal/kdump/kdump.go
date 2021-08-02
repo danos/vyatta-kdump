@@ -159,9 +159,16 @@ func Enable(numdumps *int, delete_old bool) error {
 	if err != nil {
 		return err
 	}
+
+	// do not return error if the crashkernel cmdline parameter is missing
+	if CrashKernelParam == "" {
+		return nil
+	}
+
 	if CrashKernelMemory == 0 {
 		return errors.New("No Crash Kernel Memory reserved. Not starting KDump")
 	}
+
 	// If Kdump is already loaded no need to restart.
 	if GetKDumpState() == KDumpReady {
 		log.Ilog.Printf("No need to restart Kernel Crash Dump Service")
@@ -241,7 +248,9 @@ func crashKernelMemFromCfg(cfgmem string) (string, error) {
 func ReserveMem(cfgmem string) error {
 	if cfgmem == "0" {
 		out, err := exec.Command(grubEditEnvCmd, "--running", "--action=unset", "crashkernel_mem").Output()
-		log.Dlog.Printf("Free reserved memory: out=%s, err=%s", out, err)
+		if err != nil {
+			log.Dlog.Printf("Free reserved memory: out=%s, err=%s", out, err)
+		}
 		return err
 	}
 	grubenvval, err := crashKernelMemFromCfg(cfgmem)

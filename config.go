@@ -56,7 +56,7 @@ func (c *Config) Set(newConfig *ConfigData) error {
 	if newConfig != nil {
 		err := c.applyConfig(newConfig)
 		if err != nil {
-			log.Elog.Println("Set Error: %s", err)
+			log.Elog.Println("Set Error: ", err)
 		}
 		c.currentConfig.Store(newConfig)
 	}
@@ -128,7 +128,7 @@ func setResult(newcfg *ConfigData) string {
 	if reboot && reserved && kd.Enable {
 		mem = "Reserved Memory changes will take effect on next boot."
 	} else if reboot && reserved && !kd.Enable {
-		mem = "Reseved memory will be released on next boot."
+		mem = "Reserved memory will be released on next boot."
 	} else if reboot && !reserved && kd.Enable {
 		mem = "Memory will be reserved on next boot."
 	}

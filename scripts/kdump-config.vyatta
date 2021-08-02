@@ -46,8 +46,10 @@ save_kdump_status() {
 kdump_savecore() {
 	local -a old_dumps
 	local -a new_dumps
+	local last_crash
+	local new_crash
 
-	readarray old_dumps < <(ls -1dv "${KDUMP_COREDIR}"/[0-9]*)
+	readarray old_dumps < <(ls -1dv "${KDUMP_COREDIR}"/[0-9]* 2>/dev/null)
 	if ! check_crash_count "${#old_dumps[@]}"; then 
 		save_kdump_status skipped
 		return 1
@@ -60,8 +62,9 @@ kdump_savecore() {
 	fi
 
 	readarray new_dumps < <(ls -1dv "${KDUMP_COREDIR}"/[0-9]*)
-	local last_crash="${old_dumps[-1]}"
-	local new_crash="${new_dumps[-1]}"
+
+	[ "${#old_dumps[@]}" -eq 0 ] || last_crash="${old_dumps[-1]}"
+	[ "${#new_dumps[@]}" -eq 0 ] || new_crash="${new_dumps[-1]}"
 	if [ -z "$new_crash" ] || [ "$last_crash" = "$new_crash" ]; then
 		echo "ERROR: crash dump exit status 0 - but no new kernel crash dump."
 		save_kdump_status nofile
