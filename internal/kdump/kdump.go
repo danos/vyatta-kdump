@@ -88,7 +88,7 @@ func GetCrashKernelMemory() (uint, error) {
 		return 0, err
 	}
 	s := strings.TrimSpace(string(memstr))
-	mem, err := strconv.ParseUint(s, 0, 0)
+	mem, err := strconv.ParseUint(s, 10, 0)
 	return uint(mem), err
 }
 
@@ -227,7 +227,7 @@ func crashKernelMemFromCfg(cfgmem string) (string, error) {
 		return kdumpCrashKernelMemDefault, nil
 	}
 
-	mem, err := strconv.ParseInt(cfgmem, 0, 32)
+	mem, err := strconv.ParseInt(cfgmem, 10, 32)
 	if err == nil && mem >= kdumpCrashKernelMemMin {
 		return fmt.Sprintf("%dM-:%dM", kdumpMinUnreserved+mem, mem), nil
 	}
@@ -283,15 +283,15 @@ func isCrashDir(dentry os.FileInfo) bool {
 	if len(name) != 12 { // YYYYYMMDDhhmm
 		return false
 	}
-	year, err := strconv.ParseUint(name[:4], 0, 0)
+	year, err := strconv.ParseUint(name[:4], 10, 0)
 	if err != nil || year < 1970 { // Start of epoch
 		return false
 	}
-	month, err := strconv.ParseUint(name[4:6], 0, 0)
+	month, err := strconv.ParseUint(name[4:6], 10, 0)
 	if err != nil || month > 12 {
 		return false
 	}
-	day, err := strconv.ParseUint(name[4:6], 0, 0)
+	day, err := strconv.ParseUint(name[4:6], 10, 0)
 	if err != nil || day > 31 {
 		return false
 	}
@@ -337,8 +337,8 @@ func GetCrashFiles() (string, []os.FileInfo) {
 		}
 	}
 	sort.SliceStable(crashfiles, func(i, j int) bool {
-		ni, _ := strconv.ParseUint(crashfiles[i].Name(), 0, 0)
-		nj, _ := strconv.ParseUint(crashfiles[j].Name(), 0, 0)
+		ni, _ := strconv.ParseUint(crashfiles[i].Name(), 10, 0)
+		nj, _ := strconv.ParseUint(crashfiles[j].Name(), 10, 0)
 		return nj < ni
 	})
 	return kdumpCrashDir, crashfiles
