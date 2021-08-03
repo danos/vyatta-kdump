@@ -74,9 +74,14 @@ func (r *RPC) GetCrashDmesg(in rpc.RPCInput) (*rpc.CrashDMesgOut, error) {
 	return res, nil
 }
 
+// This can take negative index
 func dumpIndex(n int32, ndumps int) (int, error) {
 	if int(n) >= ndumps || int(-n) > ndumps {
 		return -1, fmt.Errorf("Error: Index (%d) out of range [%d..%d]\n", n, -ndumps, ndumps-1)
 	}
-	return int(n) % ndumps, nil
+	r := int(n) % ndumps
+	if (r < 0) {
+		r += ndumps
+	}
+	return r, nil
 }
