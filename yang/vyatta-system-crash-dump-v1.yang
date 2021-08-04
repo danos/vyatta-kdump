@@ -55,7 +55,7 @@ module vyatta-system-crash-dump-v1 {
 
 		 Miscellaneous system configuration";
 
-	revision 2021-07-23 {
+	revision 2021-08-04 {
 		description "Initial revision.";
 	}
 
@@ -74,7 +74,7 @@ module vyatta-system-crash-dump-v1 {
 				Reserved Memory: By default, the system automatically determines the amount of
 				reserved memory.
 				- No memory is reserved for systems with less than 2304 MB of RAM.
-				- 256 MB is reserved for systems with 2304 MB to 8 GB RAM
+				- 384 MB is reserved for systems with 2432 MB to 8 GB RAM
 				- 512 MB is reserved for systems with more 8 GB RAM
 
 				No memory will be reserved and no crash dumps will be collected if remaining memory

@@ -31,7 +31,7 @@ const (
 	initrdStateFile                   = kdumpDir + ".initrd-created"
 	kexecCrashSizePath                = "/sys/kernel/kexec_crash_size"
 	kexecCrashLoadedPath              = "/sys/kernel/kexec_crash_loaded"
-	kdumpCrashKernelMemDefault        = "2304-8G:256M,8G-:512M"
+	kdumpCrashKernelMemDefault        = "2432-8G:384M,8G-:512M"
 	kdumpCrashKernelMemMin            = 256
 	kdumpMinUnreserved                = 2048
 	kdumpKernel                       = "/boot/vmlinuz"
