@@ -1,3 +1,3 @@
 usr/bin/vci-kdump lib/vci-kdump/
 usr/bin/kdump-op lib/vci-kdump/
-scripts/kdump-tech-support /opt/vyatta/share/vyatta-op/functions/tech-support.d/0940-tech-support
+scripts/tech-support/0940-kdump /opt/vyatta/share/vyatta-op/functions/tech-support.d/
