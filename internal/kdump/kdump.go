@@ -67,6 +67,7 @@ KDUMP_CMDLINE_APPEND="nr_cpus=1 systemd.unit=vyatta-kdump-dump.service irqpoll n
 var CrashKernelMemory uint  // from /sys/kernel/kexec_crash_size
 var CrashKernelParam string // Kernel command line parameter "crashkernel"
 var envFileTemplate *template.Template
+var lastBootCrashStatus string
 
 func init() {
 	envFileTemplate = template.Must(template.New("KDumpEnv").Parse(envFile))
@@ -79,6 +80,7 @@ func init() {
 	if err != nil {
 		log.Wlog.Println("Error in getting CrashKernelMemory:", err)
 	}
+	lastBootCrashStatus = getLastBootCrashStatus()
 }
 
 // return crash kernel memory in bytes
@@ -371,21 +373,53 @@ func DelCrashDump(crashdump os.FileInfo) error {
 }
 
 func LastBootCrashed() bool {
-	fn := func(dname string) bool {
-		fname := fmt.Sprintf("%s/%s", dname, kdumpLastBootFile)
-		if st, err := os.Stat(fname); err == nil && st.Size() != 0 {
-			return true
-		}
-		return false
-	}
+	return lastBootCrashStatus != ""
+}
 
+func getLastBootCrashStatus() (string) {
+	read_status := func(dname string) string {
+		fname := fmt.Sprintf("%s/%s", dname, kdumpLastBootFile)
+		if st, err := ioutil.ReadFile(fname); err == nil && len(st) != 0 {
+			if err == nil {
+				return string(st)
+			}
+		}
+		return ""
+	}
 	dirs := []string{kdumpCrashDir, runDir}
 	for _, d := range dirs {
-		if fn(d) {
-			return true
+		st := read_status(d)
+		if st == "" {
+			continue
 		}
+		var ts, bootid, status string
+		n, err := fmt.Sscanf(st, "timestamp=%s bootid=%s status=%s",
+			&ts, &bootid, &status)
+		if err != nil || n != 3 {
+			continue
+		}
+		logLastBootCrashStatus(status, ts)
+		return status
 	}
-	return false
+	return ""
+}
+
+func logLastBootCrashStatus(status string, ts string) {
+	msg := "System rebooted due to a system crash."
+	switch status {
+	case "":
+		// do nothing - no kernel crash
+	case "success":
+		log.Elog.Printf("%s Kernel crash dump file is at %s/%s/.", msg, kdumpCrashDir, ts)
+	case "skipped":
+		log.Elog.Printf("%s Kernel crash dump not saved, 'files-to-save' limit reached.", msg)
+	case "nofile":
+		log.Elog.Printf("%s Failed to create Kernel Crash dump file.", msg)
+	case "error":
+		log.Elog.Printf("%s Error while capturing kernel crash dump.", msg)
+	default:
+		log.Elog.Printf("%s Kernel crash dump status is \"%s\".", status)
+	}
 }
 
 func safeWriteFile(name string, data []byte) error {
