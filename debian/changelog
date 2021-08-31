@@ -1,3 +1,9 @@
+vyatta-kdump (0.4) unstable; urgency=medium
+
+  * drop no-dataplane from crash kernel cmdline
+
+ -- Nachiketa Prachanda <nprachan@vyatta.att-mail.com>  Tue, 31 Aug 2021 10:44:05 -0700
+
 vyatta-kdump (0.3) unstable; urgency=medium
 
   [ Nachiketa Prachanda ]
