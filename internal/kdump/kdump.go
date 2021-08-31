@@ -61,7 +61,7 @@ KDUMP_DELETE_OLD={{.DeleteOld}}
 #MAKEDUMP_ARGS="-c -d 31"
 #KDUMP_KEXEC_ARGS=""
 #KDUMP_CMDLINE=""
-KDUMP_CMDLINE_APPEND="nr_cpus=1 systemd.unit=vyatta-kdump-dump.service irqpoll nousb ata_piix.prefer_ms_hyperv=0 no-dataplane"
+KDUMP_CMDLINE_APPEND="nr_cpus=1 systemd.unit=vyatta-kdump-dump.service irqpoll nousb ata_piix.prefer_ms_hyperv=0"
 `
 
 var CrashKernelMemory uint  // from /sys/kernel/kexec_crash_size
