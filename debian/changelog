@@ -1,3 +1,32 @@
+vyatta-kdump (0.3) unstable; urgency=medium
+
+  [ Nachiketa Prachanda ]
+  * scripts: add tech-support hooks
+  * add vyatta-kdump-config package
+  * vci: fix sorting of crash directories
+  * vci: implement kdump need-reboot status node
+  * vci: return non-fatal message from Set
+  * vci: wait for systemd to start kdump load service
+  * yang: fix description and help
+  * yang: fix show command arguments
+  * config: refactor applyConfig function
+  * vci: rewrite defaults file only if changed
+  * vci: drop unnecessary log message
+  * rpc: translate negative index to array index
+  * vci: fix check in isCrashDir
+  * rpc: fix DeleteCrashDumps function
+  * fix log  and error message
+  * rpc: handle negative index
+  * increase default kdump reserved memory
+  * fixup installation path for tech-support script
+  * inhibit vyatta-dataplane service on kdump boot
+  * vci: emit a log if last boot crashed
+
+  [ Daniel Gollub ]
+  * debian: "go tool vet" is deprecated
+
+ -- Nachiketa Prachanda <nprachan@vyatta.att-mail.com>  Tue, 31 Aug 2021 09:36:53 -0700
+
 vyatta-kdump (0.2) unstable; urgency=medium
 
   * debian: update vyatta-op-crash-dump-v1-yang depends
